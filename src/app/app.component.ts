@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { AddressMapComponent } from './features/address-map/address-map.component';
+import { RouterModule } from '@angular/router';
+import { HeaderComponent } from './shared/components';
 
 @Component({
     selector: 'app-root',
-    imports: [AddressMapComponent],
+    standalone: true,
+    imports: [RouterModule, HeaderComponent],
     templateUrl: './app.component.html',
     styleUrl: './app.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,

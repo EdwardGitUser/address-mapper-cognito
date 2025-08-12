@@ -4,13 +4,13 @@
         <mat-form-field appearance="outline" class="full-width">
             <mat-label>Country</mat-label>
             <mat-select formControlName="country" autocomplete="country">
-                @for (country of countries; track country.code) {
+                @for (country of countries(); track country.code) {
                     <mat-option [value]="country.code">
                         {{ country.flag }} {{ country.name }}
                     </mat-option>
                 }
             </mat-select>
-            @if (countryControl.errors?.['required']) {
+            @if (countryControl.errors?.['required'] && countryControl.touched) {
                 <mat-error>Country is required</mat-error>
             }
         </mat-form-field>
@@ -26,10 +26,10 @@
                 placeholder="Address line 1"
                 autocomplete="address-line1"
             />
-            @if (streetAddressControl.errors?.['required']) {
+            @if (streetAddressControl.errors?.['required'] && streetAddressControl.touched) {
                 <mat-error>Street address is required</mat-error>
             }
-            @if (streetAddressControl.errors?.['minlength']) {
+            @if (streetAddressControl.errors?.['minlength'] && streetAddressControl.touched) {
                 <mat-error>Street address must be at least 5 characters</mat-error>
             }
         </mat-form-field>
@@ -48,20 +48,20 @@
         </mat-form-field>
     </div>
 
-    <!-- Oblast -->
+    <!-- Province / State -->
     <div class="form-row">
         <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Oblast</mat-label>
+            <mat-label>Province / State</mat-label>
             <mat-select formControlName="stateProvince" autocomplete="address-level1">
-                <mat-option value="">Select oblast</mat-option>
-                @for (state of states; track state.code) {
+                <mat-option value="">Select Province / State</mat-option>
+                @for (state of availableStates(); track state.code) {
                     <mat-option [value]="state.code">
                         {{ state.name }}
                     </mat-option>
                 }
             </mat-select>
-            @if (stateProvinceControl.errors?.['required']) {
-                <mat-error>Oblast is required</mat-error>
+            @if (stateProvinceControl.errors?.['required'] && stateProvinceControl.touched) {
+                <mat-error>Province / State is required</mat-error>
             }
         </mat-form-field>
     </div>
@@ -72,13 +72,13 @@
             <mat-label>City</mat-label>
             <mat-select formControlName="city" autocomplete="address-level2">
                 <mat-option value="">Select a city</mat-option>
-                @for (city of cities; track city.name) {
+                @for (city of availableCities(); track city.name) {
                     <mat-option [value]="city.name">
                         {{ city.name }}
                     </mat-option>
                 }
             </mat-select>
-            @if (cityControl.errors?.['required']) {
+            @if (cityControl.errors?.['required'] && cityControl.touched) {
                 <mat-error>City is required</mat-error>
             }
         </mat-form-field>
@@ -94,10 +94,10 @@
                 placeholder="postal-code"
                 autocomplete="postal-code"
             />
-            @if (postalCodeControl.errors?.['required']) {
+            @if (postalCodeControl.errors?.['required'] && postalCodeControl.touched) {
                 <mat-error>Postal code is required</mat-error>
             }
-            @if (postalCodeControl.errors?.['pattern']) {
+            @if (postalCodeControl.errors?.['pattern'] && postalCodeControl.touched) {
                 <mat-error>Invalid postal code format</mat-error>
             }
         </mat-form-field>
@@ -111,9 +111,9 @@
             [disabled]="addressForm.invalid || isGeneratingQrCode()"
         >
             @if (isGeneratingQrCode()) {
-                <span class="button-content"> Generating QR Code... </span>
+                <span class="button-content"> Adding address... </span>
             } @else {
-                <span class="button-content"> Generate QR Code </span>
+                <span class="button-content"> Add address </span>
             }
         </button>
     </div>

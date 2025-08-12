@@ -4,11 +4,13 @@ import {
     input,
     effect,
     signal,
-    ViewChild,
+    viewChild,
     ElementRef,
+    ChangeDetectorRef,
+    inject,
 } from '@angular/core';
 import { GoogleMapsModule } from '@angular/google-maps';
-import { UserAddress } from '../address-form/address-form.component';
+import { CreateAddressRequest } from '../../../models/address.model';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 
@@ -17,16 +19,19 @@ const DEFAULT_MAP_ZOOM = 12;
 
 @Component({
     selector: 'app-google-map',
+    standalone: true,
     imports: [GoogleMapsModule, MatIconModule, MatButtonModule],
     templateUrl: './google-map.component.html',
     styleUrl: './google-map.component.scss',
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class GoogleMapComponent {
-    @ViewChild('autocompleteInput') autocompleteInput!: ElementRef<HTMLInputElement>;
+    readonly autocompleteInput = viewChild<ElementRef<HTMLInputElement>>('autocompleteInput');
 
-    public readonly address = input<UserAddress | null>(null);
+    // inputs-outputs
+    public readonly address = input<CreateAddressRequest | null>(null);
 
+    // signals
     public readonly center = signal(DEFAULT_MAP_CENTER);
     public readonly zoom = signal(DEFAULT_MAP_ZOOM);
     public readonly mapOptions = signal<google.maps.MapOptions>({
@@ -46,9 +51,12 @@ export class GoogleMapComponent {
     private geocoder?: google.maps.Geocoder;
     private map?: google.maps.Map;
 
+    // injections
+    private readonly cdr = inject(ChangeDetectorRef);
+
     constructor() {
         effect(() => {
-            const currentAddress: UserAddress | null = this.address();
+            const currentAddress: CreateAddressRequest | null = this.address();
             if (currentAddress && typeof google !== 'undefined' && google.maps) {
                 this.updateMapLocation(currentAddress);
             }
@@ -72,9 +80,8 @@ export class GoogleMapComponent {
             });
         }
 
-        setTimeout(() => {
-            this.initializeAutocomplete();
-        }, 100);
+        this.cdr.markForCheck();
+        this.initializeAutocomplete();
     }
 
     public onPlaceSelected(place: google.maps.places.PlaceResult): void {
@@ -90,13 +97,14 @@ export class GoogleMapComponent {
     }
 
     public clearAutocompleteInput(): void {
-        if (this.autocompleteInput) {
-            this.autocompleteInput.nativeElement.value = '';
+        const inputRef = this.autocompleteInput();
+        if (inputRef) {
+            inputRef.nativeElement.value = '';
             this.selectedPlace.set(null);
         }
     }
 
-    private updateMapLocation(address: UserAddress): void {
+    private updateMapLocation(address: CreateAddressRequest): void {
         if (typeof google === 'undefined' || !google.maps || !this.geocoder) {
             return;
         }
@@ -115,7 +123,7 @@ export class GoogleMapComponent {
         });
     }
 
-    private buildSimpleAddress(address: UserAddress): string {
+    private buildSimpleAddress(address: CreateAddressRequest): string {
         return [address.city.trim(), address.stateProvince.trim(), address.country.trim()].join(
             ', '
         );
@@ -131,8 +139,11 @@ export class GoogleMapComponent {
                 fields: ['place_id', 'geometry', 'name', 'formatted_address'],
             };
 
+            const inputRef = this.autocompleteInput();
+            if (!inputRef) return;
+
             const autocomplete = new google.maps.places.Autocomplete(
-                this.autocompleteInput.nativeElement,
+                inputRef.nativeElement,
                 autocompleteOptions
             );
 

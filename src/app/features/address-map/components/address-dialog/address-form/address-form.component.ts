@@ -1,12 +1,12 @@
 import {
     ChangeDetectionStrategy,
     Component,
-    EventEmitter,
     OnInit,
-    Output,
     signal,
     inject,
     DestroyRef,
+    computed,
+    output,
 } from '@angular/core';
 import {
     FormBuilder,
@@ -27,16 +27,9 @@ import {
     LocationState,
     LocationCity,
     LocationService,
-} from '../../services/location.service';
-
-export interface UserAddress {
-    country: string;
-    streetAddress: string;
-    addressLine2?: string;
-    city: string;
-    stateProvince: string;
-    postalCode: string;
-}
+    DEFAULT_COUNTRY_CODE,
+} from '../../../services/location.service';
+import { CreateAddressRequest } from '../../../models/address.model';
 
 export interface AddressFormControls {
     country: FormControl<string>;
@@ -51,6 +44,7 @@ export type AddressForm = FormGroup<AddressFormControls>;
 
 @Component({
     selector: 'app-address-form',
+    standalone: true,
     imports: [
         ReactiveFormsModule,
         MatFormFieldModule,
@@ -64,16 +58,32 @@ export type AddressForm = FormGroup<AddressFormControls>;
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AddressFormComponent implements OnInit {
-    @Output() readonly addressChanged = new EventEmitter<UserAddress>();
-    @Output() readonly generateQrCode = new EventEmitter<UserAddress>();
+    // outputs-inputs
+    public readonly addressChanged = output<CreateAddressRequest>();
+    public readonly addAddress = output<CreateAddressRequest>();
 
+    // form
     public addressForm!: AddressForm;
-    public readonly isGeneratingQrCode = signal(false);
+    public readonly isGeneratingQrCode = signal<boolean>(false);
 
-    public countries: LocationCountry[] = [];
-    public states: LocationState[] = [];
-    public cities: LocationCity[] = [];
+    public readonly countries = signal<LocationCountry[]>([]);
+    public readonly selectedCountry = signal<string>('');
+    public readonly selectedState = signal<string>('');
 
+    public readonly availableStates = computed<LocationState[]>(() => {
+        const countryCode: string = this.selectedCountry();
+        return countryCode ? this.locationService.getStatesByCountry(countryCode) : [];
+    });
+
+    public readonly availableCities = computed<LocationCity[]>(() => {
+        const countryCode: string = this.selectedCountry();
+        const stateCode: string = this.selectedState();
+        return countryCode && stateCode
+            ? this.locationService.getCitiesByState(countryCode, stateCode)
+            : [];
+    });
+
+    // injections
     private readonly fb = inject(FormBuilder);
     private readonly destroyRef = inject(DestroyRef);
     private readonly locationService = inject(LocationService);
@@ -82,7 +92,7 @@ export class AddressFormComponent implements OnInit {
         this.initializeLocationData();
         this.buildForm();
         this.subscribeToAddressChanges();
-        this.subscribeToLocationChanges();
+        this.subscribeToFormValueChanges();
     }
 
     public get countryControl(): FormControl<string> {
@@ -108,18 +118,25 @@ export class AddressFormComponent implements OnInit {
     public get postalCodeControl(): FormControl<string> {
         return this.addressForm.controls.postalCode;
     }
+    public onGenerateQrCode(): void {
+        if (this.addressForm.valid) {
+            this.isGeneratingQrCode.set(true);
+            const userAddress: CreateAddressRequest = this.getCurrentAddressValue();
 
-    private initializeLocationData(): void {
-        this.countries = this.locationService.getSupportedCountries();
+            this.addAddress.emit(userAddress);
 
-        const firstCountry = this.countries[0];
-        if (firstCountry) {
-            this.states = this.locationService.getStatesByCountry(firstCountry.code);
+            setTimeout(() => this.isGeneratingQrCode.set(false), 1000);
+        } else {
+            this.addressForm.markAllAsTouched();
         }
+    }
+    private initializeLocationData(): void {
+        this.countries.set(this.locationService.getSupportedCountries());
+        this.selectedCountry.set(DEFAULT_COUNTRY_CODE);
     }
 
     private buildForm(): void {
-        const defaultCountryCode = this.countries[0]?.code || '';
+        const defaultCountryCode = DEFAULT_COUNTRY_CODE;
 
         this.addressForm = this.fb.group<AddressFormControls>({
             country: this.fb.control(defaultCountryCode, {
@@ -154,9 +171,9 @@ export class AddressFormComponent implements OnInit {
             .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
             .subscribe(formValue => {
                 if (formValue.country && formValue.city && formValue.stateProvince) {
-                    const userAddress: UserAddress = {
+                    const userAddress: CreateAddressRequest = {
                         country: formValue.country,
-                        streetAddress: formValue.streetAddress?.trim() || '',
+                        street: formValue.streetAddress?.trim() || '',
                         addressLine2: formValue.addressLine2?.trim() || undefined,
                         city: formValue.city.trim(),
                         stateProvince: formValue.stateProvince.trim(),
@@ -168,78 +185,40 @@ export class AddressFormComponent implements OnInit {
             });
     }
 
-    private subscribeToLocationChanges(): void {
-        merge(
-            this.addressForm
-                .get('country')!
-                .valueChanges.pipe(
-                    map((countryCode: string) => ({ type: 'country' as const, value: countryCode }))
-                ),
-            this.addressForm
-                .get('stateProvince')!
-                .valueChanges.pipe(
-                    map((stateCode: string) => ({ type: 'state' as const, value: stateCode }))
-                )
-        )
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe(({ type, value }) => {
-                switch (type) {
-                    case 'country':
-                        this.onCountryChange(value);
-                        break;
-                    case 'state':
-                        this.onStateChange(value);
-                        break;
-                }
+    private subscribeToFormValueChanges(): void {
+        this.addressForm
+            .get('country')!
+            .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(countryCode => {
+                this.selectedCountry.set(countryCode);
+                this.addressForm.patchValue(
+                    {
+                        stateProvince: '',
+                        city: '',
+                    },
+                    { emitEvent: false }
+                );
+            });
+
+        this.addressForm
+            .get('stateProvince')!
+            .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe(stateCode => {
+                this.selectedState.set(stateCode);
+                this.addressForm.patchValue(
+                    {
+                        city: '',
+                    },
+                    { emitEvent: false }
+                );
             });
     }
 
-    private onCountryChange(countryCode: string): void {
-        this.states = this.locationService.getStatesByCountry(countryCode);
-        this.cities = [];
-
-        this.addressForm.patchValue(
-            {
-                stateProvince: '',
-                city: '',
-            },
-            { emitEvent: false }
-        );
-    }
-
-    private onStateChange(stateCode: string): void {
-        const countryCode = this.addressForm.value.country;
-        if (!stateCode || !countryCode) {
-            this.cities = [];
-            return;
-        }
-
-        this.cities = this.locationService.getCitiesByState(countryCode, stateCode);
-
-        this.addressForm.patchValue(
-            {
-                city: '',
-            },
-            { emitEvent: false }
-        );
-    }
-    public onGenerateQrCode(): void {
-        if (this.addressForm.valid) {
-            this.isGeneratingQrCode.set(true);
-            const userAddress: UserAddress = this.getCurrentAddressValue();
-
-            this.generateQrCode.emit(userAddress);
-
-            setTimeout(() => this.isGeneratingQrCode.set(false), 1000);
-        } else {
-            this.addressForm.markAllAsTouched();
-        }
-    }
-    private getCurrentAddressValue(): UserAddress {
+    private getCurrentAddressValue(): CreateAddressRequest {
         const formValue = this.addressForm.getRawValue();
         return {
             country: formValue.country,
-            streetAddress: formValue.streetAddress.trim(),
+            street: formValue.streetAddress.trim(),
             addressLine2: formValue.addressLine2?.trim() || undefined,
             city: formValue.city.trim(),
             stateProvince: formValue.stateProvince.trim(),

@@ -1,0 +1,70 @@
+.addresses-container {
+    padding: 24px;
+    width: 1100px;
+    max-width: 90vw;
+    margin: 0 auto;
+}
+
+.search-section {
+    display: flex;
+    justify-content: space-between;
+
+    gap: 24px;
+
+    .controls-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+
+        .search-field {
+            flex: 0 1 320px;
+            max-width: 320px;
+            min-width: 220px;
+        }
+
+        .sort-field {
+            width: 180px;
+            flex: 0 0 180px;
+        }
+    }
+
+    .create-button {
+        mat-icon {
+            margin-right: 8px;
+        }
+    }
+}
+
+.addresses-content {
+    .addresses-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+}
+
+.empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    color: #999;
+
+    mat-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+
+    p {
+        margin: 8px 0;
+        font-size: 16px;
+
+        &:first-of-type {
+            font-size: 18px;
+            font-weight: 500;
+            color: #666;
+        }
+    }
+}

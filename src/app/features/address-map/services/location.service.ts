@@ -21,18 +21,58 @@ export interface LocationCity {
     longitude?: string | null;
 }
 
+const SUPPORTED_COUNTRY_CODES = [
+    'AD', // Andorra
+    'AL', // Albania
+    'AM', // Armenia
+    'AT', // Austria
+    'AZ', // Azerbaijan
+    'BA', // Bosnia and Herzegovina
+    'BE', // Belgium
+    'BG', // Bulgaria
+
+    'CH', // Switzerland
+    'CY', // Cyprus
+    'CZ', // Czechia
+    'DE', // Germany
+    'DK', // Denmark
+    'EE', // Estonia
+    'ES', // Spain
+    'FI', // Finland
+    'FR', // France
+    'GB', // United Kingdom
+    'GE', // Georgia
+    'GR', // Greece
+    'HR', // Croatia
+
+    'NL', // Netherlands
+    'NO', // Norway
+    'PL', // Poland
+    'PT', // Portugal
+
+    'SE', // Sweden
+
+    'TR', // Türkiye
+    'UA', // Ukraine
+
+    'US', // United States
+] as const;
+
+type SupportedCountryCode = (typeof SUPPORTED_COUNTRY_CODES)[number];
+
+export const DEFAULT_COUNTRY_CODE: SupportedCountryCode = 'UA';
+
 @Injectable({
     providedIn: 'root',
 })
 export class LocationService {
-    private readonly supportedCountries = ['UA'];
-
-    // GET ALL COUNTRIES
     public getSupportedCountries(): LocationCountry[] {
         const allCountries: ICountry[] = Country.getAllCountries();
 
         return allCountries
-            .filter(country => this.supportedCountries.includes(country.isoCode))
+            .filter(country =>
+                SUPPORTED_COUNTRY_CODES.includes(country.isoCode as SupportedCountryCode)
+            )
             .map(country => ({
                 code: country.isoCode,
                 name: country.name,
@@ -40,10 +80,9 @@ export class LocationService {
             }))
             .sort((a, b) => a.name.localeCompare(b.name));
     }
-    // GET STATES BY COUNTRY
+
     public getStatesByCountry(countryCode: string): LocationState[] {
-        if (!this.supportedCountries.includes(countryCode)) {
-            console.warn(`Country ${countryCode} is not supported`);
+        if (!SUPPORTED_COUNTRY_CODES.includes(countryCode as SupportedCountryCode)) {
             return [];
         }
 
@@ -57,10 +96,9 @@ export class LocationService {
             }))
             .sort((a, b) => a.name.localeCompare(b.name));
     }
-    // GET CITIES BY STATE
+
     public getCitiesByState(countryCode: string, stateCode: string): LocationCity[] {
-        if (!this.supportedCountries.includes(countryCode)) {
-            console.warn(`Country ${countryCode} is not supported`);
+        if (!SUPPORTED_COUNTRY_CODES.includes(countryCode as SupportedCountryCode)) {
             return [];
         }
 
@@ -77,10 +115,8 @@ export class LocationService {
             .sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    // GET ALL CITIES BY COUNTRY
     public getAllCitiesByCountry(countryCode: string): LocationCity[] {
-        if (!this.supportedCountries.includes(countryCode)) {
-            console.warn(`Country ${countryCode} is not supported`);
+        if (!SUPPORTED_COUNTRY_CODES.includes(countryCode as SupportedCountryCode)) {
             return [];
         }
 
@@ -101,20 +137,17 @@ export class LocationService {
             .sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    // GET COUNTRY BY CODE
     public getCountryByCode(countryCode: string): LocationCountry | null {
         const countries: LocationCountry[] = this.getSupportedCountries();
         return countries.find(country => country.code === countryCode) || null;
     }
 
-    // GET STATE BY CODE
     public getStateByCode(countryCode: string, stateCode: string): LocationState | null {
         const states: LocationState[] = this.getStatesByCountry(countryCode);
         return states.find(state => state.code === stateCode) || null;
     }
 
-    // CHECK IF COUNTRY IS SUPPORTED
     public isCountrySupported(countryCode: string): boolean {
-        return this.supportedCountries.includes(countryCode);
+        return SUPPORTED_COUNTRY_CODES.includes(countryCode as SupportedCountryCode);
     }
 }

@@ -1,0 +1,49 @@
+<div class="addresses-container">
+    <div class="search-section">
+        <div class="controls-left">
+            <mat-form-field appearance="outline" class="search-field">
+                <mat-label>Search addresses</mat-label>
+                <input
+                    matInput
+                    type="text"
+                    [formControl]="searchControl"
+                    placeholder="Type to search..."
+                />
+                <mat-icon matSuffix>search</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="sort-field">
+                <mat-label>Sort</mat-label>
+                <mat-select [formControl]="sortControl">
+                    <mat-option value="newest">Newest first</mat-option>
+                    <mat-option value="oldest">Oldest first</mat-option>
+                </mat-select>
+            </mat-form-field>
+        </div>
+
+        <button mat-raised-button color="primary" (click)="onCreateAddress()" class="create-button">
+            <mat-icon>add</mat-icon>
+            Create Address
+        </button>
+    </div>
+
+    <div class="addresses-content">
+        @if (filteredAddresses().length > 0) {
+            <app-address-table
+                [addresses]="filteredAddresses()"
+                (remove)="onRemoveAddress($event)"
+            ></app-address-table>
+        } @else {
+            <div class="empty-state">
+                <mat-icon>location_off</mat-icon>
+                @if (addresses().length === 0) {
+                    <p>No addresses yet</p>
+                    <p>Click "Create Address" to add your first address</p>
+                } @else {
+                    <p>No addresses match your search</p>
+                    <p>Try adjusting your search terms</p>
+                }
+            </div>
+        }
+    </div>
+</div>
