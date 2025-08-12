@@ -119,6 +119,7 @@ export class GoogleMapComponent {
                     lng: location.lng,
                 };
                 this.center.set(newCenter);
+                this.cdr.markForCheck();
             }
         });
     }
@@ -169,6 +170,8 @@ export class GoogleMapComponent {
                             this.map.setZoom(15);
                         }
                     }
+
+                    this.cdr.markForCheck();
                 }
             });
         } catch {
