@@ -1,0 +1,15 @@
+[build]
+  command = "npm run build"
+  publish = "dist/address-mapper/browser"
+
+# Ensure compatible Node version on Netlify
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA routing for Angular
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+

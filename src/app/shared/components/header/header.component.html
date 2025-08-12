@@ -4,6 +4,10 @@
         <h1 class="header-title">{{ title() }}</h1>
     </div>
     <div class="header-right">
+        <p style="font-size: 12px">
+            AWS Cognito credentials are needed for this button to work, unfortunately I don't have
+            them yet
+        </p>
         @if (!isAuthenticated()) {
             <div class="header-actions">
                 <button mat-stroked-button color="primary" (click)="onSignIn()">Sign in</button>
