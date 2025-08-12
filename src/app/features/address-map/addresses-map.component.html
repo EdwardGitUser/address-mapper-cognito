@@ -15,8 +15,9 @@
             <mat-form-field appearance="outline" class="sort-field">
                 <mat-label>Sort</mat-label>
                 <mat-select [formControl]="sortControl">
-                    <mat-option value="newest">Newest first</mat-option>
-                    <mat-option value="oldest">Oldest first</mat-option>
+                    <mat-option [value]="null">No sort</mat-option>
+                    <mat-option [value]="SortOrder.Newest">Newest first</mat-option>
+                    <mat-option [value]="SortOrder.Oldest">Oldest first</mat-option>
                 </mat-select>
             </mat-form-field>
         </div>

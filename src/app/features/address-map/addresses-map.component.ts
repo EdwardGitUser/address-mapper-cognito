@@ -14,6 +14,11 @@ import { AddressTableComponent } from './components/address-table/address-table.
 import { AddressDialogComponent } from './components/address-dialog/address-dialog.component';
 import { Address } from './models/address.model';
 
+enum SortOrder {
+    Newest = 'newest',
+    Oldest = 'oldest',
+}
+
 @Component({
     selector: 'app-addresses-map',
     standalone: true,
@@ -36,24 +41,25 @@ export class AddressesMapComponent {
     private readonly addressesService = inject(AddressesService);
     private readonly dialog = inject(MatDialog);
 
+    public readonly SortOrder = SortOrder;
+
     //searching & sorting
     public readonly searchControl = new FormControl('');
-    public readonly sortControl = new FormControl<'newest' | 'oldest'>('newest');
+    public readonly sortControl = new FormControl<SortOrder | null>(SortOrder.Newest);
 
     private readonly searchTerm = toSignal(
         this.searchControl.valueChanges.pipe(debounceTime(300), distinctUntilChanged()),
         { initialValue: '' }
     );
-    private readonly sortOrder = toSignal(
-        this.sortControl.valueChanges.pipe(debounceTime(0), distinctUntilChanged()),
-        { initialValue: 'newest' as 'newest' | 'oldest' }
-    );
+    private readonly sortOrder = toSignal(this.sortControl.valueChanges, {
+        initialValue: SortOrder.Newest,
+    });
 
     //addresses
     public readonly addresses = this.addressesService.addresses;
     public readonly filteredAddresses = computed<Address[]>(() => {
-        const search = (this.searchTerm() || '').toLowerCase();
-        const order: 'newest' | 'oldest' | null = this.sortOrder();
+        const search: string = (this.searchTerm() || '').toLowerCase();
+        const order: SortOrder | null = this.sortOrder();
 
         const base: Address[] = this.addresses();
 
@@ -68,9 +74,13 @@ export class AddressesMapComponent {
               )
             : base.slice();
 
+        if (order === null) {
+            return filtered;
+        }
+
         return filtered.sort((a, b) => {
-            const diff = b.createdAt.getTime() - a.createdAt.getTime();
-            return order === 'newest' ? diff : -diff;
+            const diff: number = b.createdAt.getTime() - a.createdAt.getTime();
+            return order === SortOrder.Newest ? diff : -diff;
         });
     });
 
